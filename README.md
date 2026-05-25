@@ -12,17 +12,20 @@
 **Solve the missing outbound REGISTER problem.** LiveKit's built-in SIP Trunk
 cannot initiate outbound SIP REGISTER messages, so many SIP providers have no
 way to deliver incoming calls. This gateway acts as a **B2BUA (Back-to-Back
-User Agent)** that registers with your provider and bridges calls to LiveKit.
+User Agent)** that registers with your provider and bridges calls bidirectionally
+between the SIP provider and LiveKit.
 
 ```
 SIP Provider ◄─REGISTER── B2BUA Gateway ◄──RTP──► LiveKit
      │                        │                      │
      └──────inbound call──────┘────forward INVITE────┘
+     ┌──────outbound call─────┐◄───forward INVITE─────┘
 ```
 
 ## ✨ Features
 
 - **🔗 Static SIP trunk for LiveKit** — accept incoming calls from any SIP provider that requires registration
+- **📤 Bidirectional B2BUA** — inbound calls from provider to LiveKit AND outbound calls from LiveKit to provider
 - **🔄 Full B2BUA media bridging** — two independent call legs with RTP forwarded via PJSIP conference bridge
 - **📞 Caller ID preserved** — original From header forwarded as `P-Asserted-Identity` to LiveKit
 - **🔌 Multi-line, multi-provider** — each line configures its own provider + LiveKit trunk pair
