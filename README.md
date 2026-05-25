@@ -139,3 +139,36 @@ Inbound ports (open on firewall):
 - `provider.register_port` -- for calls from the SIP provider
 - `livekit.listen_port` -- for calls from LiveKit
 - `8080` -- health check
+
+## Firewall Configuration (UFW)
+
+Below is an example `ufw` setup. Replace `<sip_provider_subnet>` with your
+SIP provider's subnet (or IP range), and `<your_external_ip>` with your
+LiveKit server's IP. Adjust ports to match your `config.json`.
+
+```bash
+# SIP signalling (UDP + TCP) from your provider
+sudo ufw allow proto udp from <sip_provider_subnet> to any port 5060
+sudo ufw allow proto tcp from <sip_provider_subnet> to any port 5060
+
+# Registration port (if different from signalling port)
+sudo ufw allow proto udp from <sip_provider_subnet> to any port 5061
+sudo ufw allow proto tcp from <sip_provider_subnet> to any port 5061
+
+# RTP media range 10000-20000 from provider
+sudo ufw allow proto udp from <sip_provider_subnet> to any port 10000:20000
+
+# LiveKit trunk (replace with your LiveKit server IP)
+sudo ufw allow proto udp from <your_external_ip> to any port 5062
+
+# Optional: health check only on internal network
+# sudo ufw allow from 172.16.0.0/12 to any port 8080
+
+# Make sure SSH stays accessible
+sudo ufw allow 22/tcp
+```
+
+> **Note on RTP range:** The gateway uses PJSIP's built-in RTP port pool.
+> You can set a custom range per line via `rtp_port_start` and
+> `rtp_port_count` in `config.json`. The example above opens `10000:20000`
+> for the provider side. LiveKit handles its own RTP ports internally.
