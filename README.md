@@ -29,15 +29,15 @@ routed to the provider. Media (audio) is bridged between the two legs.
 ## How It Works
 
 ```
-  +--------------+         +----------------------------------+         +--------------+
+  +-------------+         +-----------------------------------+         +--------------+
   |             |  INVITE | 1. ProviderLine accepts the call, |  INVITE |              |
-  |  SIP        | ------->|    sends 180 Ringing to provider  | ------->|  LiveKit      |
-  | Provider    |         | 2. Creates B2BCall -> makeCall()   |         | SIP Trunk     |
-  |             |         | 3. LiveKit answers 200 OK --       | 200 OK  |              |
-  |             | <-------|    gateway responds 200 OK         | <-------|              |
-  |             |         | 4. AudioMedia bridged via          |         |              |
-  |             | RTP pw  |    PJSIP conference bridge         | RTP pw  |              |
-  +--------------+         +----------------------------------+         +--------------+
+  |  SIP        | ------->|    sends 180 Ringing to provider  | ------->|  LiveKit     |
+  | Provider    |         | 2. Creates B2BCall -> makeCall()  |         | SIP Trunk    |
+  |             |         | 3. LiveKit answers 200 OK --      | 200 OK  |              |
+  |             | <-------|    gateway responds 200 OK        | <-------|              |
+  |             |         | 4. AudioMedia bridged via         |         |              |
+  |             | RTP pw  |    PJSIP conference bridge        | RTP pw  |              |
+  +-------------+         +-----------------------------------+         +--------------+
 ```
 
 1. **ProviderLine** registers with the SIP provider (REGISTER).
