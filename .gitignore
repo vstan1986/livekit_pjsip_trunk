@@ -1,0 +1,13 @@
+
+# Python
+__pycache__/
+*.pyc
+
+# Configuration with real credentials
+config.json
+
+# Environment overrides
+.env
+
+# Large binaries downloaded at build time
+*.tar.gz

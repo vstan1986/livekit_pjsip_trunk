@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  b2bua-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: b2bua-gateway
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.json:/app/config.json:ro
+    environment:
+      - CONFIG_PATH=/app/config.json
+      - PYTHONUNBUFFERED=1
+      # Optionally override passwords via env (see README):
+      # - SIP_PASSWORD_LINE_1=secret1
+      # - SIP_PASSWORD_LINE_2=secret2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    # SIP ports are managed via config.json (register_port + listen_port per line).
+    # With network_mode: host, ports are exposed directly on the host
+    # interface, so NO port mapping is needed — they're automatically
+    # available on the host IP.
+    #
+    # If you use bridge networking instead, uncomment ports below
+    # and match them to your config.json port values:
+    # ports:
+    #   # Line 1
+    #   - "5061:5061/udp"  # provider.register_port
+    #   - "5062:5062/udp"  # livekit.listen_port
+    #   # Line 2
+    #   - "5063:5063/udp"  # provider.register_port
+    #   - "5064:5064/udp"  # livekit.listen_port
+    #   # Health check
+    #   - "8080:8080"

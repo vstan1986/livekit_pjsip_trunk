@@ -1,0 +1,57 @@
+{
+    "endpoint": {
+        "user_agent": "B2BUA SIP Gateway/1.0",
+        "stun_server": "",
+        "log_level": 3
+    },
+    "lines": [
+        {
+            "name": "Line 1",
+            "enabled": true,
+            "provider": {
+                "host": "sip.provider.example.com",
+                "port": 5060,
+                "transport": "udp",
+                "register_port": 5061,
+                "auth": {
+                    "username": "1001",
+                    "password": "change-me"
+                },
+                "register": true,
+                "registration_timeout": 300,
+                "keepalive_interval": 25
+            },
+            "livekit": {
+                "listen_port": 5062,
+                "target_host": "livekit.example.com",
+                "target_port": 5060
+            }
+        },
+        {
+            "name": "Line 2",
+            "enabled": true,
+            "provider": {
+                "host": "sip.provider2.example.com",
+                "port": 5060,
+                "transport": "udp",
+                "register_port": 5063,
+                "auth": {
+                    "username": "1002",
+                    "password": "change-me"
+                },
+                "register": true,
+                "registration_timeout": 300,
+                "keepalive_interval": 25
+            },
+            "livekit": {
+                "listen_port": 5064,
+                "target_host": "livekit.example.com",
+                "target_port": 5060
+            }
+        }
+    ],
+    "health_check": {
+        "listen_ip": "0.0.0.0",
+        "listen_port": 8080
+    }
+}
