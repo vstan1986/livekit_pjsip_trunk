@@ -1,54 +1,37 @@
-# B2BUA SIP Gateway
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.9-blue?logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/PJSIP-2.15.1-green" alt="PJSIP">
+  <img src="https://img.shields.io/badge/LiveKit-SIP%20Trunk-purple?logo=livekit" alt="LiveKit">
+  <a href="https://hub.docker.com/r/vstan1986/livekit-pjsip-trunk"><img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker" alt="Docker"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
+  <a href="https://github.com/vstan1986/livekit_pjsip_trunk/actions/workflows/docker-build.yml"><img src="https://github.com/vstan1986/livekit_pjsip_trunk/actions/workflows/docker-build.yml/badge.svg" alt="Build"></a>
+</p>
 
-**B2BUA SIP Gateway** solves a limitation of LiveKit SIP Trunk -- LiveKit cannot
-initiate outbound SIP REGISTER. As a result, the SIP provider has no way of
-knowing where to deliver incoming calls.
+# B2BUA SIP Gateway — Static SIP Trunk for LiveKit
 
-This project provides LiveKit with a **static SIP trunk**:
-
-```
-SIP Provider <--> B2BUA Gateway <--> LiveKit
-    (REGISTER)         (static SIP trunk)
-```
-
-The gateway registers with the provider, accepts incoming calls, and forwards
-them to the LiveKit SIP trunk address. Conversely, calls from LiveKit are
-routed to the provider. Media (audio) is bridged between the two legs.
-
-## Philosophy
-
-- **Single configuration file** `config.json`. No env flags, extra configs,
-  or complex CLI arguments.
-- **Zero overhead for the peer.** The gateway does not modify the audio stream,
-  and Caller ID is transparently forwarded.
-- **Each line gets its own port.** Multiple providers and multiple LiveKit
-  trunks can be connected.
-- **Cheap and simple.** Runs on a single VPS, no database, S3, or Redis
-  required -- minimal dependencies.
-
-## How It Works
+**Solve the missing outbound REGISTER problem.** LiveKit's built-in SIP Trunk
+cannot initiate outbound SIP REGISTER messages, so many SIP providers have no
+way to deliver incoming calls. This gateway acts as a **B2BUA (Back-to-Back
+User Agent)** that registers with your provider and bridges calls to LiveKit.
 
 ```
-  +-------------+         +-----------------------------------+         +--------------+
-  |             |  INVITE | 1. ProviderLine accepts the call, |  INVITE |              |
-  |  SIP        | ------->|    sends 180 Ringing to provider  | ------->|  LiveKit     |
-  | Provider    |         | 2. Creates B2BCall -> makeCall()  |         | SIP Trunk    |
-  |             |         | 3. LiveKit answers 200 OK --      | 200 OK  |              |
-  |             | <-------|    gateway responds 200 OK        | <-------|              |
-  |             |         | 4. AudioMedia bridged via         |         |              |
-  |             | RTP pw  |    PJSIP conference bridge        | RTP pw  |              |
-  +-------------+         +-----------------------------------+         +--------------+
+SIP Provider ◄─REGISTER── B2BUA Gateway ◄──RTP──► LiveKit
+     │                        │                      │
+     └──────inbound call──────┘────forward INVITE────┘
 ```
 
-1. **ProviderLine** registers with the SIP provider (REGISTER).
-2. Incoming call from provider -> `ProviderLine.onIncomingCall()` ->
-   creates B2BCall -> INVITE to LiveKit.
-3. LiveKit responds -> answer to provider -> audio bridged.
-4. Outgoing call from LiveKit -> `LiveKitLine.onIncomingCall()` ->
-   INVITE to provider -- same flow.
-5. **Health Check** `GET /health` -- JSON status of each line.
+## ✨ Features
 
-## Quick Start
+- **🔗 Static SIP trunk for LiveKit** — accept incoming calls from any SIP provider that requires registration
+- **🔄 Full B2BUA media bridging** — two independent call legs with RTP forwarded via PJSIP conference bridge
+- **📞 Caller ID preserved** — original From header forwarded as `P-Asserted-Identity` to LiveKit
+- **🔌 Multi-line, multi-provider** — each line configures its own provider + LiveKit trunk pair
+- **🔒 Password via environment** — override SIP passwords with `SIP_PASSWORD_<NAME>` env vars (never commit secrets)
+- **🩺 Health endpoint** — `GET /health` returns registration status of every line
+- **🐳 Docker-only, zero deps** — no database, Redis, S3, or external services required. Runs on a single VPS
+- **⚡ Low latency** — minimal jitter buffer (10 ms), no VAD, no resampling, Opus passthrough
+
+## 📦 Quick Start
 
 ```bash
 # 1. Copy and edit the config
@@ -58,21 +41,50 @@ cp config.example.json config.json
 # 2. Start the gateway
 docker compose up -d
 
-# 3. Check status
+# 3. Check registration status
 curl http://localhost:8080/health
 ```
 
-PJSIP is downloaded automatically from the official repository during build.
+PJSIP is downloaded and compiled automatically during the Docker build.
 
-## Configuration
+## 🔧 Why This Exists
 
-Copy `config.example.json` to `config.json` and fill in your data:
+LiveKit's SIP Trunk is ** outbound-only** — it does NOT send REGISTER to your
+provider. Many providers (especially in Europe and Asia) require a REGISTER
+before they route inbound calls to you. This project fills that gap with a
+lightweight, stateless B2BUA gateway.
 
-```bash
-cp config.example.json config.json
+| Approach | Inbound calls | Complexity |
+|---|---|---|
+| LiveKit SIP Trunk (standalone) | ❌ No | Low |
+| **This gateway + LiveKit** | ✅ Yes | Low |
+| Full PBX (Asterisk / FreeSWITCH) | ✅ Yes | High |
+
+## 🧠 How It Works
+
+```
+  +-------------+         +-----------------------------------+         +--------------+
+  │             │  INVITE │ 1. ProviderLine accepts the call, │  INVITE │              │
+  │  SIP        │ ───────►│    sends 180 Ringing to provider  │ ───────►│  LiveKit     │
+  │ Provider    │         │ 2. Creates B2BCall → makeCall()   │         │ SIP Trunk    │
+  │             │         │ 3. LiveKit answers 200 OK ──      │ 200 OK  │              │
+  │             │ ◄───────│    gateway responds 200 OK        │ ◄───────│              │
+  │             │         │ 4. AudioMedia bridged via         │         │              │
+  │             │  RTP    │    PJSIP conference bridge        │  RTP    │              │
+  +-------------+         +-----------------------------------+         +--------------+
 ```
 
-Example structure:
+1. **ProviderLine** registers with the SIP provider via REGISTER.
+2. Incoming call from provider → `ProviderLine.onIncomingCall()` →
+   creates B2BCall → INVITE to LiveKit.
+3. LiveKit responds → answer to provider → audio bridged.
+4. Outgoing call from LiveKit → `LiveKitLine.onIncomingCall()` →
+   INVITE to provider — same flow.
+5. **Health Check** `GET /health` returns JSON status of each line.
+
+## ⚙️ Configuration
+
+Copy `config.example.json` to `config.json` and fill in your data:
 
 ```json
 {
@@ -113,34 +125,37 @@ After changes, restart the container:
 docker compose restart
 ```
 
-## Environment Variables
+### 🔐 Environment Variables
 
 Passwords can be overridden via env (more secure than config.json):
 
-```
+```bash
 SIP_PASSWORD_LINE_1=supersecret
 ```
 
 The variable follows the pattern `SIP_PASSWORD_<NAME>`, where `<NAME>` is the
 line name in uppercase, with spaces replaced by `_`. For example, for a line
-named `My Line` -- `SIP_PASSWORD_MY_LINE=...`.
+named `My Line`:
 
-You can also use a `.env` file in the project directory (it is already in
-`.gitignore`):
+```bash
+SIP_PASSWORD_MY_LINE=supersecret
+```
+
+You can also use a `.env` file in the project directory:
 
 ```bash
 echo "SIP_PASSWORD_LINE_1=supersecret" >> .env
 docker compose --env-file .env up -d
 ```
 
-## Ports
+## 🌐 Ports
 
 Inbound ports (open on firewall):
-- `provider.register_port` -- for calls from the SIP provider
-- `livekit.listen_port` -- for calls from LiveKit
-- `8080` -- health check
+- `provider.register_port` — for calls from the SIP provider
+- `livekit.listen_port` — for calls from LiveKit
+- `8080` — health check
 
-## Firewall Configuration (UFW)
+## 🛡️ Firewall Configuration (UFW)
 
 Below is an example `ufw` setup. Replace `<sip_provider_subnet>` with your
 SIP provider's subnet (or IP range), and `<your_external_ip>` with your
@@ -172,3 +187,33 @@ sudo ufw allow 22/tcp
 > You can set a custom range per line via `rtp_port_start` and
 > `rtp_port_count` in `config.json`. The example above opens `10000:20000`
 > for the provider side. LiveKit handles its own RTP ports internally.
+
+## 📊 Comparison
+
+| Feature | This gateway | Asterisk / FreeSWITCH | Kamailio + RTPProxy |
+|---|---|---|---|
+| Setup time | 5 minutes | Hours–days | Days |
+| Docker image | ✅ Single-stage | ❌ Complex | ❌ Complex |
+| Resources | 256 MB RAM | 1 GB+ RAM | 512 MB+ RAM |
+| Configuration | Single JSON file | Multiple configs | Multiple configs |
+| Inbound REGISTER | ✅ Yes | ✅ Yes | ✅ Yes |
+| Media anchoring | ✅ Yes (PJSIP) | ✅ Yes | ✅ Yes |
+
+## 🏗️ Project Philosophy
+
+- **Single configuration file** — `config.json`. No env flags, extra configs,
+  or complex CLI arguments.
+- **Zero overhead for the peer** — The gateway does not modify the audio stream,
+  and Caller ID is transparently forwarded.
+- **Each line gets its own port** — Multiple providers and multiple LiveKit
+  trunks can be connected.
+- **Cheap and simple** — Runs on a single VPS, no database, S3, or Redis
+  required.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
