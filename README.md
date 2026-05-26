@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/PJSIP-2.15.1-green" alt="PJSIP">
   <img src="https://img.shields.io/badge/LiveKit-SIP%20Trunk-purple?logo=livekit" alt="LiveKit">
   <a href="https://hub.docker.com/r/vstan1986/livekit-pjsip-trunk"><img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker" alt="Docker"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv2-blue" alt="License"></a>
   <a href="https://github.com/vstan1986/livekit_pjsip_trunk/actions/workflows/docker-build.yml"><img src="https://github.com/vstan1986/livekit_pjsip_trunk/actions/workflows/docker-build.yml/badge.svg" alt="Build"></a>
 </p>
 
@@ -219,4 +219,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v2 — see the [LICENSE](LICENSE) file for details.
+
+PJSIP, which this project links against, is also GPL v2 licensed (or later).
+See [PJSIP Licensing](https://www.pjsip.org/licensing.htm) for details.
